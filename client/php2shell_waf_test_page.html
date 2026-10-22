@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head><meta charset="UTF-8"><title>php2shell WAF 測試頁</title>
+<style>body{font-family:sans-serif;max-width:720px;margin:40px auto;line-height:1.6} code{background:#eee;padding:2px 4px}</style>
+</head>
+<body>
+<h1>php2shell WAF 測試頁（CVE-2026-109619）</h1>
+<p><b>使用前：</b>用文字編輯器把下方 form 的 <code>action</code> 改成受 WAF 保護的 PHP 網址，再用瀏覽器開啟本檔。</p>
+<p>這個表單帶有 <code>PHP_SESSION_UPLOAD_PROGRESS</code> 隱藏欄位。表單內容不含攻擊程式碼。</p>
+<ul>
+  <li>WAF 設定正確：按下按鈕後出現「Request Rejected」頁面與 Support ID。</li>
+  <li>WAF 沒有阻擋：頁面顯示 <code>REACHED_PHP=yes</code>。</li>
+</ul>
+<!-- Change the action URL to a PHP page of the site behind the WAF virtual server -->
+<form action="https://www.example.com/index.php" method="post" enctype="multipart/form-data">
+  <input type="hidden" name="PHP_SESSION_UPLOAD_PROGRESS" value="waftest">
+  <p>檔案（可不選） <input type="file" name="upload"></p>
+  <p><button type="submit" id="send">送出測試</button></p>
+</form>
+</body>
+</html>
