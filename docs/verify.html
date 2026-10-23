@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>php2shell 驗證方法</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="bar" aria-label="頁面">
+  <div class="wrap">
+    <a class="brand" href="index.html">php2shell · F5 WAF</a>
+    <ul class="tabs">
+      <li><a href="index.html">公告</a></li>
+      <li><a href="setup.html">設定步驟</a></li>
+      <li><a href="verify.html" aria-current="page">驗證方法</a></li>
+      <li><a href="bigip.html">BIG-IP 本身</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="hero">
+    <p class="eyebrow">設定完成後 · 約 5 分鐘</p>
+    <h1>驗證方法：確認 WAF 已擋下 php2shell</h1>
+    <p class="lede">不需要寫程式。最簡單的方法只要一個瀏覽器：送出一個帶有漏洞特徵的表單，看 WAF 是否回應阻擋頁，再到設備上用 Support ID 查詢。</p>
+  </header>
+
+  <section>
+    <h2>測試前</h2>
+    <ul>
+      <li>只對您有權限測試的網站進行。正式環境請在維護時段測試，並先通知監控單位。</li>
+      <li>測試的網址是經過 WAF 的網站網址，不是後端主機的位址。</li>
+      <li>測試內容只帶有漏洞的特徵欄位，不含攻擊程式碼，不會影響網站運作。</li>
+    </ul>
+  </section>
+
+  <section id="browser">
+    <h2>方法 A　瀏覽器測試頁（建議）</h2>
+    <div class="btns">
+      <a class="btn primary" href="https://github.com/ryantseng24/php2shell-f5-waf-tools/blob/main/client/php2shell_waf_test_page.html">下載測試頁</a>
+      <a class="btn ghost" href="https://github.com/ryantseng24/php2shell-f5-waf-tools/archive/refs/heads/main.zip">下載全部工具（zip）</a>
+    </div>
+    <ol>
+      <li>用文字編輯器開啟 <code>php2shell_waf_test_page.html</code>。</li>
+      <li>把 <code>&lt;form action="https://www.example.com/index.php"</code> 的網址，改成要測試的 PHP 網址。</li>
+      <li>用瀏覽器直接開啟這個檔案。不需要把檔案放到網站上。</li>
+      <li>按「送出測試」。</li>
+    </ol>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/21_browser_test_page.png" width="1280" height="320" alt="php2shell WAF 測試頁" loading="lazy"></button><figcaption>測試頁</figcaption></figure>
+    <p>出現下面的阻擋頁，表示 WAF 已擋下。請記下 Support ID。</p>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/22_browser_blocked.png" width="1280" height="140" alt="WAF 阻擋頁與 Support ID" loading="lazy"></button><figcaption>WAF 阻擋頁</figcaption></figure>
+    <p>如果看到網站的回應內容，表示請求已經送到 PHP，WAF 沒有阻擋。請回到 <a href="setup.html#sop2">設定步驟 2</a> 檢查。</p>
+  </section>
+
+  <section id="curl">
+    <h2>方法 B　curl 指令</h2>
+    <p>把網址換成要測試的 PHP 網址。第一行是一般表單，應該正常回應；第二行帶有漏洞特徵，應該被擋。</p>
+    <div class="code"><pre># 1) normal form: must pass through the WAF
+curl -s -X POST -F "note=test" https://www.example.com/index.php
+
+# 2) php2shell indicator: must be blocked
+curl -s -X POST -F "PHP_SESSION_UPLOAD_PROGRESS=waftest" -F "note=test" https://www.example.com/index.php</pre></div>
+    <p>第二行被擋時，回應內容會包含：</p>
+    <div class="code"><pre>The requested URL was rejected. Please consult with your administrator.
+Your support ID is: (a long number)</pre></div>
+  </section>
+
+  <section id="log">
+    <h2>在設備上確認</h2>
+    <p>用阻擋頁上的 Support ID，確認是 php2shell 的 signature 擋下。</p>
+    <div class="path"><span>GUI 路徑</span><b>Security ›› Event Logs : Application : Requests</b></div>
+    <div class="step"><span class="n">1</span><h4>按漏斗圖示，在 Support ID 輸入號碼，按 Apply</h4></div>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/23_eventlog_filter.png" width="502" height="610" alt="Event Log 的 Support ID 篩選欄位" loading="lazy"></button><figcaption>用 Support ID 篩選</figcaption></figure>
+    <div class="step"><span class="n">2</span><h4>確認 Request Status 是 Blocked，violation 包含 Attack signature detected</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/24_eventlog_detail.png" width="982" height="223" alt="Request 細節顯示 Blocked 與觸發的 violation" loading="lazy"></button><figcaption>Blocked，並觸發 Attack signature detected</figcaption></figure>
+    <div class="step"><span class="n">3</span><h4>展開 Attack signature detected 的 Occurrence，確認名稱是 PHP Remote Code Execution</h4></div>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/25_eventlog_signature.png" width="580" height="309" alt="Attack Signature 名稱為 PHP Remote Code Execution" loading="lazy"></button><figcaption>比對到的欄位與 signature 名稱</figcaption></figure>
+  </section>
+
+  <section id="result">
+    <h2>結果判讀</h2>
+    <div class="tbl"><table>
+      <tr><th>看到的結果</th><th>代表什麼</th><th>處理方式</th></tr>
+      <tr><td>一般表單也被擋</td><td>新規則誤擋</td><td>依 Event Log 的 violation 調整，不要直接關閉 signature</td></tr>
+      <tr><td>特徵表單沒有被擋</td><td>signature 不在 policy、仍在 staging，或 policy 不是 Blocking</td><td>回到 <a href="setup.html#sop2">設定步驟 2</a> 檢查</td></tr>
+      <tr><td>回應不是阻擋頁，也不是網站內容</td><td>可能有 CDN 或其他設備先處理，或使用自訂阻擋頁</td><td>在 Event Log 用時間與來源 IP 查詢</td></tr>
+      <tr><td>Event Log 查不到 Support ID</td><td>請求沒有經過這台 BIG-IP</td><td>確認 DNS 與連線路徑</td></tr>
+    </table></div>
+  </section>
+
+  <section id="advanced">
+    <h2>進階：完整測試 script</h2>
+    <p>需要更完整的驗證時，可使用 GitHub 上的 Python script（Python 3.6 以上，不需安裝套件）。它會同時送出正常請求與多種漏洞特徵，並判讀每一項的結果。</p>
+    <div class="code"><pre>python3 php2shell_waf_test.py https://www.example.com/index.php</pre></div>
+    <p>只完成 3 個 signature 的設定時，部分項目不會被擋。這是預期結果，那些項目對應 F5 的選用設定。說明見 <a href="https://github.com/ryantseng24/php2shell-f5-waf-tools#3-python-完整測試">README</a>。</p>
+  </section>
+
+  <div class="next"><span>需要協助時，請聯絡您的業務窗口。</span><a class="btn ghost" href="index.html">回到公告</a></div>
+
+  <footer>2026-10-22 · 測試方法已在 BIG-IP 17.5.1.8 實機上確認。</footer>
+</main>
+
+<div class="lightbox" id="lightbox" hidden><img alt=""></div>
+<script src="app.js"></script>
+</body>
+</html>

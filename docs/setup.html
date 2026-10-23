@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>php2shell 設定步驟</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="bar" aria-label="頁面">
+  <div class="wrap">
+    <a class="brand" href="index.html">php2shell · F5 WAF</a>
+    <ul class="tabs">
+      <li><a href="index.html">公告</a></li>
+      <li><a href="setup.html" aria-current="page">設定步驟</a></li>
+      <li><a href="verify.html">驗證方法</a></li>
+      <li><a href="bigip.html">BIG-IP 本身</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="hero">
+    <p class="eyebrow">給 F5 工程師 · BIG-IP Advanced WAF／ASM 17.x、21.x</p>
+    <h1>設定步驟：讓 3 個 php2shell signature 生效</h1>
+    <p class="lede">共 4 個步驟。步驟 1 每台設備做一次，步驟 2 到 4 每個保護 PHP 網站的 policy 都要做。畫面取自 BIG-IP 17.5.1.8。</p>
+  </header>
+
+  <section>
+    <h2>開始前</h2>
+    <ul>
+      <li>確認保護 PHP 網站的 policy 是 Blocking 模式。Transparent 模式只記錄、不阻擋。</li>
+      <li>備份要修改的 policy（Export 或 UCS）。</li>
+      <li>建議在維護時段操作。Apply Policy 不會中斷連線，但新規則可能誤擋正常流量。</li>
+    </ul>
+  </section>
+
+  <section id="sop1">
+    <h2>步驟 1　安裝特徵碼更新（ASU）</h2>
+    <div class="path"><span>GUI 路徑</span><b>System ›› Software Management : Live Update ›› ASM Attack Signatures</b></div>
+    <p>找到 <code>ASM-AttackSignatures_20261021_191526.im</code>（或更新版本），看 Status 欄位：</p>
+    <div class="tbl"><table>
+      <tr><th>Status</th><th>意思</th></tr>
+      <tr><td><span class="pill ok">Currently Installed</span></td><td>已安裝，做步驟 2</td></tr>
+      <tr><td><span class="pill warn">Pending (Preview Available)</span></td><td>已下載，但沒有安裝</td></tr>
+      <tr><td><span class="pill dim">清單中沒有</span></td><td>按 Check for Updates；設備不能連網時，從 MyF5 Downloads 下載後按 Upload File</td></tr>
+    </table></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/01_liveupdate_before.png" width="1600" height="702" alt="Live Update 畫面，ASU 為 Pending，自動安裝為 Disabled" loading="lazy"></button><figcaption>已下載但沒有安裝。「Installation of Automatically Downloaded Updates」是 Disabled 時，設備不會自動安裝。</figcaption></figure>
+    <p>點選檔名，按 <b>View Full Readme</b> 可確認含有 200204113、200103697、200204115。確認後按 <b>Install</b>，等 Status 變成 Currently Installed（實測約 3 分 30 秒）。</p>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/03_asu_readme.png" width="1600" height="932" alt="ASU Readme 中的 3 個 signature" loading="lazy"></button><figcaption>Readme 中的 3 個 signature</figcaption></figure>
+    <h3>確認設備上已有 3 個 signature</h3>
+    <div class="path"><span>GUI 路徑</span><b>Security ›› Options : Application Security : Attack Signatures : Attack Signatures List</b></div>
+    <p>按漏斗圖示，在 Attack Signature Name 輸入「PHP Remote Code Execution」，按 Apply。</p>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/04_global_sig_list.png" width="1600" height="502" alt="Attack Signatures List 中的 3 個 signature" loading="lazy"></button><figcaption>3 個 signature 已存在。200103697 與 200204115 的 Accuracy 是 LOW，這是步驟 2 的重點。</figcaption></figure>
+  </section>
+
+  <section id="sop2">
+    <h2>步驟 2　確認 policy 是否包含 3 個 signature</h2>
+    <div class="path"><span>GUI 路徑</span><b>Security ›› Application Security : Security Policies : Policies List ›› （policy 名稱）›› Attack Signatures</b></div>
+    <p>按漏斗圖示，在 Attack Signature Name 輸入「PHP Remote Code Execution」，按 Apply。</p>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/05_policy_sig_missing.png" width="1600" height="522" alt="policy 中搜尋不到這 3 個 signature" loading="lazy"></button><figcaption>以 Rapid Deployment 範本建立的 policy：ASU 安裝後仍然沒有這 3 個 signature</figcaption></figure>
+    <div class="tbl"><table>
+      <tr><th>搜尋結果</th><th>下一步</th></tr>
+      <tr><td>3 筆都在，Status 都是 Enforced</td><td>Apply Policy 後，做驗證</td></tr>
+      <tr><td>3 筆都在，但 Status 是 Staging</td><td>做步驟 4</td></tr>
+      <tr><td>少於 3 筆，或沒有資料</td><td>做步驟 3，再做步驟 4</td></tr>
+    </table></div>
+    <h3>為什麼會沒有</h3>
+    <p>policy 只使用已指派的 signature set。這 3 個 signature 屬於 PHP 系統，而且其中 2 個 accuracy 是 Low，常用的「Generic Detection Signatures (High/Medium Accuracy)」不包含它們。</p>
+    <p>在 policy 加入 Server Technology「PHP」時，GUI 會建立「PHP Signatures (High/Medium Accuracy)」：</p>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/07_srvtech_confirm.png" width="1600" height="642" alt="加入 Server Technology PHP 的確認視窗" loading="lazy"></button><figcaption>這個 set 只收 High／Medium accuracy，所以只會帶入 200204113</figcaption></figure>
+    <div class="note warn"><b>只加 Server Technology PHP 不夠</b>200103697 與 200204115 仍然不會進入 policy。請用步驟 3 的專用 signature set。</div>
+  </section>
+
+  <section id="sop3">
+    <h2>步驟 3　建立專用 signature set 並指派給 policy</h2>
+    <h3>3-1　建立 signature set（每台設備一次）</h3>
+    <div class="path"><span>GUI 路徑</span><b>Security ›› Options : Application Security : Attack Signatures : Attack Signature Sets ›› Create</b></div>
+    <div class="tbl"><table>
+      <tr><th>欄位</th><th>設定值</th></tr>
+      <tr><td>Attack Signature Set Name</td><td class="mono">php2shell_CVE-2026-109618_109619</td></tr>
+      <tr><td>Default Blocking Actions</td><td>Learn、Alarm、Block 都勾選</td></tr>
+      <tr><td>Assign Set to Newly Created Policies</td><td class="mono">Never</td></tr>
+      <tr><td>Signature Set Type</td><td class="mono">Manual</td></tr>
+    </table></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/10_sigset_props.png" width="1600" height="522" alt="signature set 基本設定" loading="lazy"></button><figcaption>基本設定</figcaption></figure>
+    <ol>
+      <li>在 Signature Name or ID 輸入「PHP Remote Code Execution」。</li>
+      <li>把滑鼠移到 PHP Remote Code Execution、(2)、(3) 這 3 筆上，按右側的「+」。不要加入 Juniper JunOS 那一筆。</li>
+      <li>確認 Assigned Signatures 顯示 (3)，按 Add。</li>
+    </ol>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/09_sigset_assigned.png" width="1600" height="932" alt="Assigned Signatures 顯示 3 筆" loading="lazy"></button><figcaption>Assigned Signatures (3)</figcaption></figure>
+
+    <h3>3-2　指派給 policy（每個 PHP policy 都要做）</h3>
+    <div class="path"><span>GUI 路徑</span><b>Security ›› Application Security : Policy Building : Learning and Blocking Settings ›› Attack Signatures</b></div>
+    <ol>
+      <li>在頁面上方選擇 policy，展開 Attack Signatures，按 <b>Change...</b>。</li>
+      <li>勾選 <code>php2shell_CVE-2026-109618_109619</code>，按 <b>Change</b>。</li>
+      <li>確認新 set 的 Learn、Alarm、Block 都已勾選，按 <b>Save</b>。</li>
+    </ol>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/12_select_sigsets.png" width="1600" height="932" alt="勾選 php2shell signature set" loading="lazy"></button><figcaption>勾選新建立的 set</figcaption></figure>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/13_lbs_sigsets_after.png" width="1600" height="502" alt="新 set 已加入並勾選 Learn Alarm Block" loading="lazy"></button><figcaption>新 set 已加入，Learn／Alarm／Block 都已勾選</figcaption></figure>
+  </section>
+
+  <section id="sop4">
+    <h2>步驟 4　Enforce 並 Apply Policy</h2>
+    <p>新加入 policy 的 signature 一律先進 staging。staging 期間（預設 7 天）只記錄、不阻擋，所以要手動 Enforce。</p>
+    <div class="path"><span>GUI 路徑</span><b>Security ›› Application Security : Security Policies : Policies List ›› （policy 名稱）›› Attack Signatures</b></div>
+    <ol>
+      <li>按漏斗圖示，搜尋「PHP Remote Code Execution」。</li>
+      <li>勾選 200204113、200103697、200204115，按 <b>Enforce</b>，在確認視窗再按 <b>Enforce</b>。</li>
+    </ol>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/15_policy_enforce_btn.png" width="1600" height="482" alt="勾選 3 個 signature 並按 Enforce" loading="lazy"></button><figcaption>勾選 3 個 signature，按 Enforce</figcaption></figure>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/16_policy_enforced.png" width="1600" height="482" alt="3 個 signature 狀態為 Enforced" loading="lazy"></button><figcaption>Status 變成 Enforced</figcaption></figure>
+    <ol start="3">
+      <li>按右上角 <b>Apply Policy</b>，在確認視窗按 <b>OK</b>。「Changes details (not applied)」消失就完成（實測約 10 秒）。</li>
+    </ol>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/17_apply_policy.png" width="1600" height="142" alt="Apply Policy 按鈕" loading="lazy"></button><figcaption>還有設定沒有套用時，會顯示「Changes details (not applied)」</figcaption></figure>
+    <div class="note info"><b>多個 policy</b>每個保護 PHP 網站的 policy 都要做步驟 2 到 4。BIG-IP 上可執行 <a href="https://github.com/ryantseng24/php2shell-f5-waf-tools/blob/main/bigip/php2shell_bigip_check.sh">唯讀檢查 script</a>，一次列出所有 policy 的狀態。</div>
+  </section>
+
+  <div class="next"><span>設定完成後，請確認防禦已生效。</span><a class="btn primary" href="verify.html">下一步：驗證方法</a></div>
+
+  <footer>2026-10-22 · 畫面取自 BIG-IP 17.5.1.8 實機。· <a href="index.html">回到公告</a></footer>
+</main>
+
+<div class="lightbox" id="lightbox" hidden><img alt=""></div>
+<script src="app.js"></script>
+</body>
+</html>
