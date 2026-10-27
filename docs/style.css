@@ -88,6 +88,7 @@ th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--lin
 th { font: 600 13px/1.4 var(--f-display); color: var(--muted); background: var(--code-bg); white-space: nowrap; }
 tr:last-child td { border-bottom: 0; }
 td.mono { font-family: var(--f-mono); font-size: 13px; white-space: nowrap; }
+td.nw { white-space: nowrap; }
 
 .pill { display: inline-block; font: 500 12px/1.3 var(--f-mono); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .pill.ok { background: var(--ok-soft); color: var(--ok); }

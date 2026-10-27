@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>php2shell BIG-IP 本身緩解</title>
+<title>php2shell BIG-IP 升級與緩解</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
@@ -24,24 +24,65 @@
 
 <main class="wrap">
   <header class="hero">
-    <p class="eyebrow">給 BIG-IP 管理者 · 依據 F5 K000163821（2026-10-22 更新）</p>
-    <h1>BIG-IP 設備本身的緩解</h1>
-    <p class="lede">BIG-IP 的管理介面也使用 PHP，同樣受 php2shell 影響。F5 目前還沒有修正版，請先完成下面 2 項緩解。這和保護後端網站的 WAF 設定是兩件不同的事。</p>
+    <p class="eyebrow">給 BIG-IP 管理者 · 依據 F5 K000163821、K000163848（2026-10-27）</p>
+    <h1>BIG-IP 設備本身：升級與緩解</h1>
+    <p class="lede">BIG-IP 的管理介面與 APM 的 Access profile 也使用 PHP，同樣受 php2shell 影響。F5 已發布修正版，請儘速升級。不能立即升級時，先完成下面的緩解。這和保護後端網站的 WAF 設定是兩件不同的事。</p>
   </header>
 
   <section id="affected">
-    <h2>受影響的版本</h2>
+    <h2>受影響的版本與修正版</h2>
     <div class="tbl"><table>
-      <tr><th>產品</th><th>受影響版本</th><th>受影響元件</th><th>嚴重度</th><th>修正版</th></tr>
-      <tr><td>BIG-IP（APM、SSLO）</td><td class="mono">21.1.0<br>17.5.0 – 17.5.1<br>17.1.0 – 17.1.3</td><td>Access profile</td><td>High 8.1</td><td><span class="pill bad">尚無</span></td></tr>
-      <tr><td>BIG-IP（其他所有模組）</td><td class="mono">21.1.0<br>17.5.0 – 17.5.1<br>17.1.0 – 17.1.3</td><td>Configuration utility（管理介面）</td><td>High 7.5</td><td><span class="pill bad">尚無</span></td></tr>
+      <tr><th>產品</th><th>受影響元件</th><th>攻擊條件</th><th>嚴重度</th><th>受影響版本</th><th>修正版</th></tr>
+      <tr><td>BIG-IP APM</td><td>Access profile（data plane）</td><td class="nw">不需要登入</td><td class="nw">High 8.1</td><td class="mono">21.1.0<br>17.5.0 – 17.5.1<br>17.1.0 – 17.1.3</td><td class="mono">21.1.0.4<br>17.5.1.11<br>17.1.3.7</td></tr>
+      <tr><td>BIG-IP（所有模組，含 APM、SSLO）</td><td>Configuration utility（管理介面）</td><td class="nw">需要已登入</td><td class="nw">High 7.5</td><td class="mono">21.1.0<br>17.5.0 – 17.5.1<br>17.1.0 – 17.1.3</td><td class="mono">21.1.0.4<br>17.5.1.11<br>17.1.3.7</td></tr>
     </table></div>
-    <p class="muted">嚴重度為 CVSS v3.1。不受影響：BIG-IQ、F5 Insight、F5OS、NGINX 全系列、F5 Distributed Cloud、BIG-IP Next for Kubernetes。F5 仍在評估：BIG-IP Next CNF、F5 AI Gateway。</p>
-    <div class="note info"><b>攻擊條件</b>F5 說明，管理介面的攻擊需要由已登入的使用者發動。所以除了緩解 1，最重要的是限制誰能連到管理介面（緩解 2）。</div>
+    <p class="muted">嚴重度為 CVSS v3.1。不受影響：BIG-IQ、F5 Insight、F5OS、NGINX 全系列、F5 Distributed Cloud、BIG-IP Next。F5 只評估還沒有到 EoTS（End of Technical Support）的版本，15.1 及更舊的版本不在評估範圍，也不會有修正版。</p>
+    <div class="note bad"><b>有啟用 APM 的設備請優先處理</b>Access profile 的攻擊不需要登入。對外提供 APM 服務的設備，請優先升級。</div>
+  </section>
+
+  <section id="upgrade">
+    <h2>升級到修正版</h2>
+    <div class="tbl"><table>
+      <tr><th>目前版本</th><th>升級到</th></tr>
+      <tr><td class="mono">17.1.x</td><td class="mono">17.1.3.7</td></tr>
+      <tr><td class="mono">17.5.x</td><td class="mono">17.5.1.11</td></tr>
+      <tr><td class="mono">21.1.x</td><td class="mono">21.1.0.4</td></tr>
+      <tr><td class="mono">15.1.x、16.1.x</td><td><span class="mono">17.1.3.7</span> 或 <span class="mono">17.5.1.11</span>，可以直接升級</td></tr>
+      <tr><td class="mono">14.x 或更舊</td><td>不能直接升級到 17.x，要先升級到 15.1 或 16.1（K13845）</td></tr>
+    </table></div>
+    <ul>
+      <li>iSeries 硬體不支援 21.x，請選 17.1.3.7 或 17.5.1.11（K9476）。</li>
+      <li>F5 也為 17.1.3.6、17.5.1.10 提供 engineering hotfix。Engineering hotfix 沒有經過完整的 QA 測試，建議直接升級到上表的正式版本。</li>
+      <li>安裝檔從 MyF5 Downloads 下載，連結見 <a href="https://my.f5.com/manage/s/article/K000163848">K000163848</a>。</li>
+    </ul>
+
+    <h3>升級前</h3>
+    <ol>
+      <li>建立 UCS 備份，下載到電腦保存。</li>
+      <li>用 <code>f5mku -K</code> 查看 Master Key，和 UCS 一起保存。</li>
+      <li>在維護時段進行。啟用新版本時，設備會重新開機。</li>
+    </ol>
+
+    <h3>升級後</h3>
+    <ol>
+      <li>用 <code>tmsh show sys version</code> 確認版本。</li>
+      <li>建議建立 <code>/etc/php.ini.d/K000163878.ini</code>，再重新啟動 Apache（見下方）。</li>
+      <li>繼續保留緩解 2 的管理介面存取限制。</li>
+    </ol>
+    <div class="note warn"><b>升級後建議保留一項 PHP 設定</b>修正版已修正 CVE-2026-109618／109619，緩解 1 的 4 項設定不需要重做。升級後，<code>/etc/php.ini.d/</code> 下的檔案不會保留。F5 還在評估另一個 PHP 漏洞 CVE-2026-115560（K000163878）是否影響 BIG-IP，並建議把 <code>session.upload_progress.enabled</code> 設為 0。</div>
+    <div class="code"><pre>cat &gt; /etc/php.ini.d/K000163878.ini &lt;&lt;'EOF'
+; The configuration mitigations recommended by PHP for CVE-2026-115560
+; These will NOT survive an upgrade of BIG-IP TMOS.
+session.upload_progress.enabled = 0
+EOF
+bigstart restart httpd
+# APM systems only:
+bigstart restart httpd_sam</pre></div>
+    <p class="muted">需要升級的操作手冊（含 GUI 畫面），請聯絡您的業務窗口。</p>
   </section>
 
   <section id="php">
-    <h2>緩解 1　調整 BIG-IP 上的 PHP 設定</h2>
+    <h2>緩解 1　調整 BIG-IP 上的 PHP 設定（還沒升級的設備）</h2>
     <p>F5 建議套用 PHP 官方提供的設定緩解。請先在測試環境確認，再套用到正式設備。</p>
     <div class="step"><span class="n">1</span><h4>以 root 登入 BIG-IP 的 bash（advanced shell）</h4></div>
     <div class="step"><span class="n">2</span><h4>建立 /etc/php.ini.d/K000163821.ini</h4></div>
@@ -55,9 +96,9 @@ session.upload_progress.enabled = 0
 EOF</pre></div>
     <div class="step"><span class="n">3</span><h4>重新啟動 Apache</h4></div>
     <div class="code"><pre>bigstart restart httpd
-# only when APM or SSLO is provisioned:
+# APM systems only:
 bigstart restart httpd_sam</pre></div>
-    <p>重新啟動期間 GUI 會短暫無法使用，請在維護時段執行。沒有啟用 APM／SSLO 的設備，<code>httpd_sam</code> 會顯示「Not provisioned」，不需要重啟。</p>
+    <p>重新啟動期間 GUI 會短暫無法使用。重新啟動 <code>httpd_sam</code> 可能中斷 APM webtop 連線，使用者要重新連線。請在維護時段執行。</p>
     <div class="step"><span class="n">4</span><h4>確認 PHP 已讀到新檔案</h4></div>
     <div class="code"><pre>php -i | grep -E "Additional .ini|memory_limit|post_max_size|upload_max_filesize|session.upload_progress.enabled"</pre></div>
     <p>「Additional .ini files parsed」應包含 <code>/etc/php.ini.d/K000163821.ini</code>，4 個設定值應與上面的檔案相同。</p>
@@ -70,13 +111,13 @@ bigstart restart httpd_sam</pre></div>
       <tr><td class="mono">session.upload_progress.enabled</td><td class="mono">On</td><td class="mono">0（Off）</td></tr>
     </table></div>
     <div class="note warn"><b>注意</b>
-      多 blade 的系統，每個 blade 都要做。升級 TMOS 後這個檔案不會保留，升級後要重新建立。
+      多 blade 的系統，每個 blade 都要做（使用 <code>clsh bigstart restart httpd</code>）。HA device group 中的每台設備都要做。升級 TMOS 後這個檔案不會保留。
     </div>
   </section>
 
   <section id="access">
     <h2>緩解 2　限制管理介面的存取</h2>
-    <p>F5 說明，只要使用者還能登入管理介面，就沒有可行的緩解方式。所以要移除不完全可信任的使用者，並讓管理介面只開放給可信任的網段與設備。</p>
+    <p>F5 建議只讓可信任的使用者與設備，經由安全的網路連到管理介面。</p>
 
     <h3>2-1　管理埠：只允許可信任的來源 IP（K13309）</h3>
     <p>預設允許所有來源 IP（<code>allow { All }</code>）。用 tmsh 改成只允許管理網段：</p>
@@ -117,6 +158,10 @@ tmsh save /sys config</pre></div>
     <h2>參考資料</h2>
     <ul>
       <li><a href="https://my.f5.com/manage/s/article/K000163821">K000163821：PHP vulnerabilities CVE-2026-109618 and CVE-2026-109619</a></li>
+      <li><a href="https://my.f5.com/manage/s/article/K000163848">K000163848：What are the releases for the October 23 Critical Release</a></li>
+      <li><a href="https://my.f5.com/manage/s/article/K000163878">K000163878：PHP vulnerability CVE-2026-115560</a></li>
+      <li><a href="https://my.f5.com/manage/s/article/K9476">K9476：The F5 hardware/software compatibility matrix</a></li>
+      <li><a href="https://my.f5.com/manage/s/article/K13845">K13845：Overview of supported BIG-IP upgrade paths and an upgrade planning reference</a></li>
       <li><a href="https://my.f5.com/manage/s/article/K13309">K13309：Restricting access to the Configuration utility by source IP address</a></li>
       <li><a href="https://my.f5.com/manage/s/article/K17333">K17333：Overview of port lockdown behavior (12.x - 21.x)</a></li>
       <li><a href="https://my.f5.com/manage/s/article/K46122561">K46122561：Restrict access to the BIG-IP management interface using network firewall rules</a></li>
@@ -127,7 +172,7 @@ tmsh save /sys config</pre></div>
 
   <div class="next"><span>保護後端 PHP 網站的 WAF 設定，請看設定步驟。</span><a class="btn ghost" href="setup.html">設定步驟</a></div>
 
-  <footer>2026-10-22 · 內容依據 F5 K000163821、K13309、K17333。原本的設定值為在 BIG-IP 17.5.1.8 上唯讀查得；本頁的緩解設定未在測試設備上實際套用。· <a href="index.html">回到公告</a></footer>
+  <footer>2026-10-27 · 內容依據 F5 K000163821、K000163848、K000163878、K9476、K13845、K13309、K17333。原本的設定值為在 BIG-IP 17.5.1.8 上唯讀查得；本頁的升級與緩解設定未在測試設備上實際執行。· <a href="index.html">回到公告</a></footer>
 </main>
 <script src="app.js"></script>
 </body>

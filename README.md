@@ -2,9 +2,11 @@
 
 PHP 漏洞 php2shell（CVE-2026-109618／CVE-2026-109619）的 F5 BIG-IP Advanced WAF 設定檢查與防禦驗證工具。
 
-**說明網頁：<https://ryantseng24.github.io/php2shell-f5-waf-tools/>**（公告、設定步驟、驗證方法、BIG-IP 本身的緩解）
+**說明網頁：<https://ryantseng24.github.io/php2shell-f5-waf-tools/>**（公告、設定步驟、驗證方法、BIG-IP 升級與緩解）
 
 > **重要**：完整的修補方式是把 PHP 升級到 8.5.12、8.4.27、8.3.36 或 8.2.35。WAF 防護只能在升級完成前降低風險。
+>
+> **BIG-IP 設備本身**也受影響。F5 修正版：17.1.3.7、17.5.1.11、21.1.0.4（[K000163848](https://my.f5.com/manage/s/article/K000163848)）。說明見[說明網頁](https://ryantseng24.github.io/php2shell-f5-waf-tools/bigip.html)。
 
 ## 下載
 
@@ -26,7 +28,7 @@ PHP 漏洞 php2shell（CVE-2026-109618／CVE-2026-109619）的 F5 BIG-IP Advance
 | 200103697 | PHP Remote Code Execution (2) | CVE-2026-109618 |
 | 200204115 | PHP Remote Code Execution (3) | CVE-2026-109618 |
 
-需要 ASU `ASM-AttackSignatures_20261021_191526.im` 或更新版本。設定方式見[說明網頁的設定步驟](https://ryantseng24.github.io/php2shell-f5-waf-tools/setup.html)。
+需要 ASU `ASM-AttackSignatures_20261022_154742.im` 或更新版本。設定方式見[說明網頁的設定步驟](https://ryantseng24.github.io/php2shell-f5-waf-tools/setup.html)。
 
 ## 使用方式
 
@@ -98,4 +100,5 @@ docker run -d --name php2shell_lab -p 8081:80 -v ~/php2shell-lab/www:/var/www/ht
 ## 參考資料
 
 - [F5 K000163821](https://my.f5.com/manage/s/article/K000163821)
+- [F5 K000163848](https://my.f5.com/manage/s/article/K000163848)（BIG-IP 修正版清單）
 - [CISA Alert 2026-10-21](https://www.cisa.gov/news-events/alerts/2026/10/21/critical-vulnerabilities-php-require-immediate-patching)

@@ -1,7 +1,7 @@
 #!/bin/bash
 # php2shell (CVE-2026-109618 / CVE-2026-109619) - BIG-IP ASM read-only check.
 # Run as root in the BIG-IP advanced shell (bash). It changes nothing.
-# Checks: 1) the 3 F5 signatures exist (ASU >= 20261021_191526 installed)
+# Checks: 1) the 3 F5 signatures exist (ASU >= 20261022_154742 installed)
 #         2) per policy: enforcement mode, virtual servers, and whether each signature
 #            is in the policy, enforced (not staging) and covered by a set with Block on.
 python - <<'PYEOF'
@@ -17,7 +17,7 @@ def rest(path):
 def sid_of(link):
     return link.split('/')[-1].split('?')[0]
 
-print('== 1. Signatures on this system (needs ASU 20261021_191526 or later)')
+print('== 1. Signatures on this system (needs ASU 20261022_154742 or later)')
 gid = {}
 for s in SIGS:
     items = rest('/mgmt/tm/asm/signatures?$filter=signatureId+eq+%d&$select=id,name,accuracy' % s).get('items', [])
