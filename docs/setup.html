@@ -39,6 +39,37 @@
     </ul>
   </section>
 
+  <section id="case">
+    <h2>先確認是哪一種情況</h2>
+    <p>F5 在 ASU 20261022_154742 更新了 200103697 與 200204115。要做的事取決於當初設定時裝的 ASU 版本，和設定的日期無關。</p>
+    <div class="tbl"><table>
+      <tr><th>情況</th><th>要做的事</th></tr>
+      <tr><td>A. 之前已用 ASU 20261021 完成設定，3 個 signature 都已 Enforced</td><td>安裝 20261022，再 Enforce 一次。見<a href="#case-a">情況 A</a></td></tr>
+      <tr><td>B. 之前沒有設定</td><td>安裝 20261022，依步驟 1 到 4 設定，最後一定要 Enforce。見<a href="#case-b">情況 B</a></td></tr>
+    </table></div>
+    <p class="muted">不確定設備上是哪一版：在 Attack Signatures List（步驟 1 的最後）看 200103697 的 Accuracy。Low 表示還是 20261021，Medium 表示已是 20261022。</p>
+
+    <h3 id="case-a">情況 A：已用 ASU 20261021 完成設定</h3>
+    <ol>
+      <li>安裝 ASU 20261022_154742 或更新版本（<a href="#sop1">步驟 1</a>）。如果設備已自動安裝，跳過這一步。</li>
+      <li>在每個 PHP policy 搜尋「PHP Remote Code Execution」（<a href="#sop2">步驟 2</a> 的畫面）。200103697 與 200204115 如果顯示 Staging，做下一步。</li>
+      <li>勾選顯示 Staging 的 signature，按 Enforce，再按 Apply Policy（<a href="#sop4">步驟 4</a>）。</li>
+      <li>依<a href="verify.html">驗證方法</a>確認防禦生效。</li>
+    </ol>
+    <p>不需要重建 signature set，也不需要重新指派給 policy。lab 實測：ASU 更新後，專用 set 與 policy 仍包含這 3 個 signature。</p>
+    <div class="note warn"><b>為什麼要再 Enforce</b>F5 更新 signature 後，policy 會把新版規則放進 staging。lab 實測：200103697 的舊版規則仍會阻擋，新版規則只記錄。新版 200204115 會擋下參數名稱巢狀 64 層以上的請求，舊版不會。要 Enforce 新版，才有這項保護。</div>
+
+    <h3 id="case-b">情況 B：直接安裝 ASU 20261022</h3>
+    <ol>
+      <li>安裝 ASU 20261022_154742 或更新版本（<a href="#sop1">步驟 1</a>）。</li>
+      <li>在每個 PHP policy 搜尋「PHP Remote Code Execution」（<a href="#sop2">步驟 2</a>）。少於 3 筆時，做<a href="#sop3">步驟 3</a>。</li>
+      <li>新加入的 3 個 signature 都會顯示 Staging。全部勾選，按 Enforce，再按 Apply Policy（<a href="#sop4">步驟 4</a>）。</li>
+      <li>依<a href="verify.html">驗證方法</a>確認防禦生效。</li>
+    </ol>
+    <div class="note warn"><b>一定要 Enforce</b>Staging 中的 signature 只記錄、不阻擋。lab 實測：3 個 signature 都在 Staging 時，所有攻擊特徵都送到了 PHP。</div>
+    <p>和 20261021 相比，只有一個差異：3 個 signature 的 accuracy 都是 Medium。如果 policy 已指派「PHP Signatures (High/Medium Accuracy)」，3 個會自動進入 policy，步驟 2 會找到 3 筆，不需要做步驟 3。</p>
+  </section>
+
   <section id="sop1">
     <h2>步驟 1　安裝特徵碼更新（ASU）</h2>
     <div class="path"><span>GUI 路徑</span><b>System ›› Software Management : Live Update ›› ASM Attack Signatures</b></div>
@@ -50,12 +81,12 @@
       <tr><td><span class="pill dim">清單中沒有</span></td><td>按 Check for Updates；設備不能連網時，從 MyF5 Downloads 下載後按 Upload File</td></tr>
     </table></div>
     <figure><button type="button" aria-label="放大圖片"><img src="shots/01_liveupdate_before.png" width="1600" height="702" alt="Live Update 畫面，ASU 為 Pending，自動安裝為 Disabled" loading="lazy"></button><figcaption>已下載但沒有安裝。「Installation of Automatically Downloaded Updates」是 Disabled 時，設備不會自動安裝。</figcaption></figure>
-    <p>點選檔名，按 <b>View Full Readme</b> 可確認含有 200204113、200103697、200204115。確認後按 <b>Install</b>，等 Status 變成 Currently Installed（實測約 3 分 30 秒）。</p>
-    <figure><button type="button" aria-label="放大圖片"><img src="shots/03_asu_readme.png" width="1600" height="932" alt="ASU Readme 中的 3 個 signature" loading="lazy"></button><figcaption>Readme 中的 3 個 signature</figcaption></figure>
+    <p>點選檔名，按 <b>View Full Readme</b> 可查看這份 ASU 新增與更新的 signature。確認後按 <b>Install</b>，等 Status 變成 Currently Installed（實測 20261021 約 3 分 30 秒，20261022 約 1 分 30 秒）。</p>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/03_asu_readme.png" width="1600" height="932" alt="ASU Readme 中的 3 個 signature" loading="lazy"></button><figcaption>20261021 的 Readme：新增的 3 個 signature</figcaption></figure>
     <h3>確認設備上已有 3 個 signature</h3>
     <div class="path"><span>GUI 路徑</span><b>Security ›› Options : Application Security : Attack Signatures : Attack Signatures List</b></div>
     <p>按漏斗圖示，在 Attack Signature Name 輸入「PHP Remote Code Execution」，按 Apply。</p>
-    <figure><button type="button" aria-label="放大圖片"><img src="shots/04_global_sig_list.png" width="1600" height="502" alt="Attack Signatures List 中的 3 個 signature" loading="lazy"></button><figcaption>3 個 signature 已存在。200103697 與 200204115 的 Accuracy 是 LOW，這是步驟 2 的重點。</figcaption></figure>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/04_global_sig_list.png" width="1600" height="502" alt="Attack Signatures List 中的 3 個 signature" loading="lazy"></button><figcaption>3 個 signature 已存在。畫面是 ASU 20261021，200103697 與 200204115 的 Accuracy 是 LOW。安裝 20261022 後，3 個都是 MEDIUM。</figcaption></figure>
   </section>
 
   <section id="sop2">
@@ -70,10 +101,15 @@
       <tr><td>少於 3 筆，或沒有資料</td><td>做步驟 3，再做步驟 4</td></tr>
     </table></div>
     <h3>為什麼會沒有</h3>
-    <p>policy 只使用已指派的 signature set。這 3 個 signature 屬於 PHP 系統，而且其中 2 個 accuracy 是 Low，常用的「Generic Detection Signatures (High/Medium Accuracy)」不包含它們。</p>
+    <p>policy 只使用已指派的 signature set。這 3 個 signature 屬於 PHP 系統。常用的「Generic Detection Signatures」只包含 General Database、Various systems、System Independent、JavaScript 這 4 個系統，所以不包含它們。</p>
     <p>在 policy 加入 Server Technology「PHP」時，GUI 會建立「PHP Signatures (High/Medium Accuracy)」：</p>
-    <figure><button type="button" aria-label="放大圖片"><img src="shots/07_srvtech_confirm.png" width="1600" height="642" alt="加入 Server Technology PHP 的確認視窗" loading="lazy"></button><figcaption>這個 set 只收 High／Medium accuracy，所以只會帶入 200204113</figcaption></figure>
-    <div class="note warn"><b>只加 Server Technology PHP 不夠</b>200103697 與 200204115 仍然不會進入 policy。請用步驟 3 的專用 signature set。</div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/07_srvtech_confirm.png" width="1600" height="642" alt="加入 Server Technology PHP 的確認視窗" loading="lazy"></button><figcaption>這個 set 只收 High／Medium accuracy 的 PHP signature</figcaption></figure>
+    <div class="tbl"><table>
+      <tr><th>設備上的 ASU</th><th>只加 Server Technology PHP 的結果</th></tr>
+      <tr><td class="mono">20261021_191526</td><td>只帶入 200204113。200103697、200204115 是 Low accuracy，不會進入 policy</td></tr>
+      <tr><td class="mono">20261022_154742 起</td><td>3 個都是 Medium accuracy，3 個都會帶入</td></tr>
+    </table></div>
+    <div class="note info"><b>建議用步驟 3 的專用 signature set</b>專用 set 不受 ASU 版本與 accuracy 影響，也不會一次加入其他 PHP signature。</div>
   </section>
 
   <section id="sop3">
@@ -120,6 +156,7 @@
       <li>按右上角 <b>Apply Policy</b>，在確認視窗按 <b>OK</b>。「Changes details (not applied)」消失就完成（實測約 10 秒）。</li>
     </ol>
     <figure><button type="button" aria-label="放大圖片"><img src="shots/17_apply_policy.png" width="1600" height="142" alt="Apply Policy 按鈕" loading="lazy"></button><figcaption>還有設定沒有套用時，會顯示「Changes details (not applied)」</figcaption></figure>
+    <div class="note warn"><b>安裝更新版 ASU 後，要再 Enforce 一次</b>F5 更新的 signature 會回到 Staging。請依上面的步驟再 Enforce 並 Apply Policy，見<a href="#case-a">情況 A</a>。</div>
     <div class="note info"><b>多個 policy</b>每個保護 PHP 網站的 policy 都要做步驟 2 到 4。BIG-IP 上可執行 <a href="https://github.com/ryantseng24/php2shell-f5-waf-tools/blob/main/bigip/php2shell_bigip_check.sh">唯讀檢查 script</a>，一次列出所有 policy 的狀態。</div>
   </section>
 

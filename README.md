@@ -61,6 +61,8 @@ script 會送出 3 個正常請求（N1–N3）與 6 個漏洞特徵請求（A1�
 
 - N1–N3 應該全部通過。如果被擋，表示有誤擋，請依 Event Log 調整。
 - 只完成 3 個 signature 的設定時，A1–A6 中有部分項目不會被擋。這是預期結果，那些項目對應 F5 K000163821 中的選用設定。
+- ASU 20261022 的 3 個 signature 都 Enforce 後，lab 實測：A1、A2 由 200204113 擋下，A4 由 200103697 擋下，A5 由 200204115 擋下；A3、A6 要靠選用設定。
+- 瀏覽器測試頁與 curl 只會觸發 200204113。要確認另外 2 個，請用這個 script 或第 4 節的檢查 script。
 - 結束代碼：全部符合預期回 0，否則回 1。
 
 ### 4. BIG-IP 唯讀檢查
@@ -76,10 +78,12 @@ script 不修改任何設定。它先確認設備上是否已有 3 個 signature
 |---|---|---|
 | `OK (enforced, block)` | 已生效 | — |
 | `NOT IN POLICY` | policy 沒有這個 signature | 依設定步驟 2、3 加入 |
-| `STAGING (alarm only, not blocking)` | 在 staging，只記錄不阻擋 | 依設定步驟 4 Enforce |
+| `STAGING (alarm only)` | 在 staging，只記錄不阻擋 | 依設定步驟 4 Enforce |
 | `DISABLED` | signature 被停用 | 在 policy 中啟用 |
 | `ENFORCED but no assigned set has Block on` | 所屬 signature set 沒有勾選 Block | 在 Learning and Blocking Settings 勾選 Block |
 | `MISSING`（第 1 段） | 設備上沒有這個 signature | 先安裝 ASU |
+
+安裝更新版 ASU 後，F5 有更新的 signature 會回到 `STAGING`。這時舊版規則仍會阻擋，新版規則只記錄。請再 Enforce 一次並 Apply Policy。
 
 ### 5. 自建測試站（選用）
 

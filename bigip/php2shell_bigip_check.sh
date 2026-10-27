@@ -19,13 +19,18 @@ def sid_of(link):
 
 print('== 1. Signatures on this system (needs ASU 20261022_154742 or later)')
 gid = {}
+old_asu = False
 for s in SIGS:
     items = rest('/mgmt/tm/asm/signatures?$filter=signatureId+eq+%d&$select=id,name,accuracy' % s).get('items', [])
     if items:
         gid[s] = items[0]['id']
         print('   %d  OK       %s (accuracy %s)' % (s, items[0]['name'], items[0]['accuracy']))
+        # 20261022_154742 raised 200103697 / 200204115 from low to medium
+        old_asu = old_asu or items[0]['accuracy'] == 'low'
     else:
         print('   %d  MISSING  -> install the latest ASM attack signature update first' % s)
+if old_asu:
+    print('   NOTE: accuracy low = ASU older than 20261022_154742. Install the latest ASU, then Enforce again.')
 
 print('')
 print('== 2. Per security policy')
@@ -48,7 +53,7 @@ for p in rest('/mgmt/tm/asm/policies?$select=id,fullPath,enforcementMode,virtual
         elif not m.get('enabled'):
             verdict = 'DISABLED'
         elif m.get('performStaging'):
-            verdict = 'STAGING (alarm only, not blocking)'
+            verdict = 'STAGING (alarm only)'
         elif not any(g in b for b in blocking_sets):
             verdict = 'ENFORCED but no assigned set has Block on'
         else:

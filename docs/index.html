@@ -46,18 +46,19 @@
   <section id="todo">
     <h2>F5 Advanced WAF 客戶要完成的 4 件事</h2>
     <p>F5 已在 K000163821 發布 3 個專用的 attack signature。安裝更新後還要完成下列設定，WAF 才會真正阻擋。</p>
+    <div class="note warn"><b>已經設定過的客戶請注意</b>F5 在 ASU 20261022 更新了 200103697 與 200204115。之前用 ASU 20261021 設定好的 policy，安裝 20261022 後這 2 個會回到 Staging，要再 Enforce 一次。見<a href="setup.html#case-a">處理方式</a>。</div>
     <ol class="todo">
       <li>
         <div>
           <strong>安裝特徵碼更新（ASU）20261022_154742 或更新版本</strong>
-          <span>設備預設只會自動下載更新，不會自動安裝。請到 Live Update 確認狀態是「Currently Installed」。</span>
+          <span>沒有開啟自動安裝時，設備只會下載、不會安裝。請到 Live Update 確認狀態是「Currently Installed」。</span>
           <a href="setup.html#sop1">設定步驟 1</a>
         </div>
       </li>
       <li>
         <div>
           <strong>確認每個 PHP 網站的 policy 都包含這 3 個 signature</strong>
-          <span>其中 2 個不在常用的預設 signature set 裡，需要另外加入 policy。</span>
+          <span>常用的預設 signature set 不包含這 3 個 signature，需要另外加入 policy。</span>
           <a href="setup.html#sop2">設定步驟 2、3</a>
         </div>
       </li>
@@ -65,13 +66,13 @@
         <div>
           <strong>把 3 個 signature 設為 Enforced，並 Apply Policy</strong>
           <span>新加入的 signature 預設在 staging 狀態，只會記錄、不會阻擋。</span>
-          <a href="setup.html#sop4">設定步驟 4</a>
+          <a href="setup.html#sop4">設定步驟 4</a>　<a href="setup.html#case-a">已設定過的客戶</a>
         </div>
       </li>
       <li>
         <div>
           <strong>驗證防禦已生效</strong>
-          <span>用瀏覽器開啟測試頁並送出，確認 WAF 回應阻擋頁。不需要另外寫程式。</span>
+          <span>用瀏覽器開啟測試頁並送出，確認 WAF 回應阻擋頁。這個測試只會觸發其中 1 個 signature，所以還要在 policy 確認 3 個都是 Enforced。</span>
           <a href="verify.html">驗證方法</a>
         </div>
       </li>
@@ -107,7 +108,7 @@
     <div class="note info"><b>需要協助</b>設定或驗證時需要協助，請聯絡您的業務窗口。</div>
   </section>
 
-  <footer>2026-10-27 更新 · 本頁的設定步驟與驗證方法已在 BIG-IP 17.5.1.8 實機上操作確認。</footer>
+  <footer>2026-10-27 更新 · 本頁的設定步驟與驗證方法已在 BIG-IP 17.5.1.8 實機上操作確認（ASU 20261021 與 20261022）。</footer>
 </main>
 </body>
 </html>

@@ -68,6 +68,7 @@ curl -s -X POST -F "PHP_SESSION_UPLOAD_PROGRESS=waftest" -F "note=test" https://
     <p>第二行被擋時，回應內容會包含：</p>
     <div class="code"><pre>The requested URL was rejected. Please consult with your administrator.
 Your support ID is: (a long number)</pre></div>
+    <div class="note warn"><b>方法 A、B 只會觸發 200204113</b>另外 2 個 signature 是否生效，請在 policy 中確認 3 個都是 Enforced（<a href="setup.html#sop2">設定步驟 2</a>），或用下方的完整測試 script。安裝 ASU 20261022 後回到 Staging 的 200103697、200204115，用方法 A、B 測不出來。</div>
   </section>
 
   <section id="log">
@@ -97,12 +98,12 @@ Your support ID is: (a long number)</pre></div>
     <h2>進階：完整測試 script</h2>
     <p>需要更完整的驗證時，可使用 GitHub 上的 Python script（Python 3.6 以上，不需安裝套件）。它會同時送出正常請求與多種漏洞特徵，並判讀每一項的結果。</p>
     <div class="code"><pre>python3 php2shell_waf_test.py https://www.example.com/index.php</pre></div>
-    <p>只完成 3 個 signature 的設定時，部分項目不會被擋。這是預期結果，那些項目對應 F5 的選用設定。說明見 <a href="https://github.com/ryantseng24/php2shell-f5-waf-tools#3-python-完整測試">README</a>。</p>
+    <p>只完成 3 個 signature 的設定時，部分項目不會被擋。這是預期結果，那些項目對應 F5 的選用設定。lab 實測 ASU 20261022：A1、A2 由 200204113 擋下，A4 由 200103697 擋下，A5 由 200204115 擋下。說明見 <a href="https://github.com/ryantseng24/php2shell-f5-waf-tools#3-python-完整測試">README</a>。</p>
   </section>
 
   <div class="next"><span>需要協助時，請聯絡您的業務窗口。</span><a class="btn ghost" href="index.html">回到公告</a></div>
 
-  <footer>2026-10-22 · 測試方法已在 BIG-IP 17.5.1.8 實機上確認。</footer>
+  <footer>2026-10-27 更新 · 測試方法已在 BIG-IP 17.5.1.8 實機上確認（ASU 20261021 與 20261022）。</footer>
 </main>
 
 <div class="lightbox" id="lightbox" hidden><img alt=""></div>
