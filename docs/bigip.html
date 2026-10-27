@@ -18,6 +18,7 @@
       <li><a href="setup.html">設定步驟</a></li>
       <li><a href="verify.html">驗證方法</a></li>
       <li><a href="bigip.html" aria-current="page">BIG-IP 本身</a></li>
+      <li><a href="upgrade.html">升級步驟</a></li>
     </ul>
   </div>
 </nav>
@@ -51,7 +52,7 @@
       <tr><td class="mono">14.x 或更舊</td><td>不能直接升級到 17.x，要先升級到 15.1 或 16.1（K13845）</td></tr>
     </table></div>
     <ul>
-      <li>iSeries 硬體不支援 21.x，請選 17.1.3.7 或 17.5.1.11（K9476）。</li>
+      <li>iSeries 硬體不支援 21.x，請選 17.1.3.7 或 17.5.1.11（K9476）。rSeries 的 BIG-IP tenant 可用的版本，請用 K86001294 確認。</li>
       <li>F5 也為 17.1.3.6、17.5.1.10 提供 engineering hotfix。Engineering hotfix 沒有經過完整的 QA 測試，建議直接升級到上表的正式版本。</li>
       <li>安裝檔從 MyF5 Downloads 下載，連結見 <a href="https://my.f5.com/manage/s/article/K000163848">K000163848</a>。</li>
     </ul>
@@ -78,7 +79,7 @@ EOF
 bigstart restart httpd
 # APM systems only:
 bigstart restart httpd_sam</pre></div>
-    <p class="muted">需要升級的操作手冊（含 GUI 畫面），請聯絡您的業務窗口。</p>
+    <div class="btns"><a class="btn primary" href="upgrade.html">升級步驟（含 GUI 畫面）</a></div>
   </section>
 
   <section id="php">
@@ -161,6 +162,7 @@ tmsh save /sys config</pre></div>
       <li><a href="https://my.f5.com/manage/s/article/K000163848">K000163848：What are the releases for the October 23 Critical Release</a></li>
       <li><a href="https://my.f5.com/manage/s/article/K000163878">K000163878：PHP vulnerability CVE-2026-115560</a></li>
       <li><a href="https://my.f5.com/manage/s/article/K9476">K9476：The F5 hardware/software compatibility matrix</a></li>
+      <li><a href="https://my.f5.com/manage/s/article/K86001294">K86001294：F5OS hardware/software support matrix</a></li>
       <li><a href="https://my.f5.com/manage/s/article/K13845">K13845：Overview of supported BIG-IP upgrade paths and an upgrade planning reference</a></li>
       <li><a href="https://my.f5.com/manage/s/article/K13309">K13309：Restricting access to the Configuration utility by source IP address</a></li>
       <li><a href="https://my.f5.com/manage/s/article/K17333">K17333：Overview of port lockdown behavior (12.x - 21.x)</a></li>

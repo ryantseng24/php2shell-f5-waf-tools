@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>php2shell BIG-IP 升級步驟</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="bar" aria-label="頁面">
+  <div class="wrap">
+    <a class="brand" href="index.html">php2shell · F5 WAF</a>
+    <ul class="tabs">
+      <li><a href="index.html">公告</a></li>
+      <li><a href="setup.html">設定步驟</a></li>
+      <li><a href="verify.html">驗證方法</a></li>
+      <li><a href="bigip.html">BIG-IP 本身</a></li>
+      <li><a href="upgrade.html" aria-current="page">升級步驟</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="wrap">
+  <header class="hero">
+    <p class="eyebrow">給 BIG-IP 管理者 · iSeries、rSeries tenant · GUI 操作</p>
+    <h1>BIG-IP 升級步驟：備份設定，升級到修正版</h1>
+    <p class="lede">本頁說明如何備份 BIG-IP 的設定，再升級到 F5 修正版。iSeries 設備與 rSeries 上的 BIG-IP tenant 都適用。請先完成第 1 部分的備份，再做第 2 部分的升級。</p>
+  </header>
+
+  <section id="before">
+    <h2>開始前</h2>
+    <div class="tbl"><table>
+      <tr><th>項目</th><th>說明</th></tr>
+      <tr><td class="nw">適用範圍</td><td>BIG-IP 本身的升級：iSeries 設備，與 rSeries 上的 BIG-IP tenant。rSeries 的 F5OS 平台不受這個漏洞影響，不在本頁範圍。</td></tr>
+      <tr><td class="nw">目標版本</td><td>17.1.x 升到 17.1.3.7，17.5.x 升到 17.5.1.11，21.1.x 升到 21.1.0.4。其他版本見<a href="bigip.html#upgrade">升級對照表</a>。iSeries 不支援 21.x（<a href="https://my.f5.com/manage/s/article/K9476">K9476</a>）。rSeries tenant 可用的版本，請用 <a href="https://my.f5.com/manage/s/article/K86001294">K86001294</a> 確認。</td></tr>
+      <tr><td class="nw">需要的檔案</td><td>從 MyF5 Downloads 下載 base image ISO 與對應的 .md5 檔。修正版是正式版本，不需要另外安裝 Hotfix。</td></tr>
+      <tr><td class="nw">需要的權限</td><td>BIG-IP GUI 的 admin 帳號，與 SSH 的 root 帳號。rSeries 請登入 tenant 的 BIG-IP，不是 F5OS。</td></tr>
+      <tr><td class="nw">服務中斷</td><td>只有 2-3 啟用新版本時，BIG-IP 會重新開機（rSeries 是 tenant 重新開機），約 15–30 分鐘。請在維護時段進行。</td></tr>
+    </table></div>
+    <div class="note info"><b>HA 架構</b>本頁以單機為例。HA 架構的升級方式，請參考 F5 升級指南 <a href="https://my.f5.com/manage/s/article/K84205182">K84205182</a> 的 Chapter 7、8。</div>
+  </section>
+
+  <section id="backup">
+    <h2>第 1 部分　備份設定</h2>
+
+    <h3>1-1　建立 UCS 備份檔</h3>
+    <div class="path"><span>GUI 路徑</span><b>System ›› Archives</b></div>
+    <div class="step"><span class="n">1</span><h4>按右上角的 Create</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_01_archives_create.png" width="1453" height="239" alt="Archive List 頁面的 Create 按鈕" loading="lazy"></button><figcaption>Archive List 右上角的 Create</figcaption></figure>
+    <div class="step"><span class="n">2</span><h4>在 File Name 輸入檔名，按 Finished</h4></div>
+    <p>其他欄位使用預設值。</p>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/up_02_archive_name.png" width="828" height="456" alt="New Archive 頁面輸入檔名" loading="lazy"></button><figcaption>輸入檔名，按 Finished</figcaption></figure>
+
+    <h3>1-2　下載 UCS 備份檔</h3>
+    <div class="step"><span class="n">1</span><h4>在 Archive List 點選備份檔名</h4></div>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/up_03_archive_list.png" width="427" height="385" alt="Archive List 中的備份檔" loading="lazy"></button><figcaption>點選 .ucs 檔名</figcaption></figure>
+    <div class="step"><span class="n">2</span><h4>在 Archive File 欄位按 Download，存到電腦</h4></div>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/up_04_archive_download.png" width="524" height="399" alt="Archive File 欄位的 Download 連結" loading="lazy"></button><figcaption>按 Download 下載 .ucs 檔</figcaption></figure>
+
+    <h3>1-3　記錄 Master Key</h3>
+    <p>以 SSH 用 root 登入，執行下面的指令。輸出的一行字串，就是這台設備的 Master Key。</p>
+    <div class="code"><pre>f5mku -K</pre></div>
+    <div class="note warn"><b>Master Key 要和 UCS 一起保存</b>UCS 中加密的資料，要用 Master Key 才能解開。Master Key 和密碼一樣重要，請不要截圖或用 email 傳送。</div>
+  </section>
+
+  <section id="install">
+    <h2>第 2 部分　升級</h2>
+
+    <h3>2-1　上傳 ISO</h3>
+    <div class="path"><span>GUI 路徑</span><b>System ›› Software Management : Image List</b></div>
+    <div class="step"><span class="n">1</span><h4>在 Available Images 右側按 Import</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_05_image_import.png" width="1423" height="356" alt="Image List 的 Import 按鈕" loading="lazy"></button><figcaption>Available Images 右側的 Import</figcaption></figure>
+    <div class="step"><span class="n">2</span><h4>按「選擇檔案」，選擇下載的 ISO</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_06_choose_iso.png" width="1787" height="853" alt="選擇 ISO 檔案" loading="lazy"></button><figcaption>選擇電腦上的 ISO 檔</figcaption></figure>
+    <div class="step"><span class="n">3</span><h4>確認檔名，按 Import</h4></div>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/up_07_import_confirm.png" width="816" height="281" alt="確認檔名後按 Import" loading="lazy"></button><figcaption>確認檔名，按 Import</figcaption></figure>
+    <p>Progress 欄位會顯示上傳進度。上傳完成前，不要離開這個頁面。</p>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/up_08_upload_progress.png" width="838" height="439" alt="上傳進度" loading="lazy"></button><figcaption>上傳中</figcaption></figure>
+    <div class="step"><span class="n">4</span><h4>確認檔案完整</h4></div>
+    <p>用 SCP 把 .md5 檔上傳到 <code>/shared/images</code>，再以 SSH 執行下面的指令。把檔名換成實際的檔名。</p>
+    <div class="code"><pre>cd /shared/images
+md5sum --check &lt;iso_file_name&gt;.md5</pre></div>
+    <p>顯示 <code>OK</code> 才繼續。</p>
+
+    <h3>2-2　安裝到沒有使用中的磁區</h3>
+    <div class="step"><span class="n">1</span><h4>在 Available Images 勾選新版本的 ISO，按 Install</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_09_select_install.png" width="1453" height="398" alt="勾選新版本 ISO 並按 Install" loading="lazy"></button><figcaption>勾選新版本，按 Install</figcaption></figure>
+    <div class="step"><span class="n">2</span><h4>Select Disk 選 HD1，Volume set name 選 Active 為 No 的磁區，按 Install</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_10_select_volume.png" width="1453" height="653" alt="選擇 Active 為 No 的磁區" loading="lazy"></button><figcaption>先在 Installed Images 確認哪些磁區的 Active 是 No（這個例子是 HD1.2、HD1.3）</figcaption></figure>
+    <div class="note bad"><b>一定要選 Active 為 No 的磁區</b>選到使用中的磁區，會覆寫正在運作的系統。</div>
+    <div class="note warn"><b>不要輸入新的磁區名稱</b>請從下拉選單選擇既有的磁區。輸入新名稱會建立新的磁區，可能因為磁碟空間不足而安裝失敗。</div>
+    <div class="step"><span class="n">3</span><h4>在 Install Status 確認進度，等到顯示 complete</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_11_install_progress.png" width="1453" height="398" alt="Install Status 顯示安裝進度" loading="lazy"></button><figcaption>安裝中</figcaption></figure>
+    <p class="muted">i2600 實測：安裝約 22–32 分鐘。安裝期間不影響服務。</p>
+
+    <h3>2-3　切換開機磁區，啟用新版本</h3>
+    <div class="step"><span class="n">1</span><h4>Install Status 顯示 complete 後，按 Boot Locations 分頁</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_12_install_complete.png" width="1453" height="397" alt="安裝完成後切換到 Boot Locations" loading="lazy"></button><figcaption>新版本的磁區顯示 complete</figcaption></figure>
+    <div class="step"><span class="n">2</span><h4>點選新版本所在的磁區</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_13_boot_locations.png" width="1453" height="216" alt="Boot Locations 清單" loading="lazy"></button><figcaption>Status 為 Inactive 的是新版本的磁區</figcaption></figure>
+    <div class="step"><span class="n">3</span><h4>Install Configuration 選 Yes，Source Volume 選目前使用中的磁區，按 Activate</h4></div>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/up_14_activate_yes.png" width="648" height="595" alt="Install Configuration 選 Yes 並按 Activate" loading="lazy"></button><figcaption>Install Configuration：Yes；Source Volume：目前使用中的磁區</figcaption></figure>
+    <div class="note warn"><b>按 Activate 後 BIG-IP 會重新開機</b>約 15–30 分鐘，期間服務中斷。iSeries 開機時如果要更新硬體韌體，時間可能更長。這段時間不要關閉電源。</div>
+    <p>如果 Source Volume 是空白、無法選擇，做 2-4。否則跳到 2-5。</p>
+
+    <h3 id="cpcfg">2-4　Source Volume 無法選擇時</h3>
+    <div class="step"><span class="n">1</span><h4>以 SSH 執行 tmsh show sys software，找出兩個磁區</h4></div>
+    <div class="code"><pre>tmsh show sys software</pre></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_15_show_sys_software.png" width="1255" height="291" alt="tmsh show sys software 的輸出" loading="lazy"></button><figcaption>這個例子中，HD1.1（Active 為 yes）是使用中的磁區，HD1.2 是新版本的磁區</figcaption></figure>
+    <div class="step"><span class="n">2</span><h4>把設定複製到新版本的磁區</h4></div>
+    <div class="code"><pre># cpcfg --source=&lt;active volume&gt; &lt;new volume&gt;
+cpcfg --source=HD1.1 HD1.2</pre></div>
+    <p>HD1.1 換成使用中的磁區，HD1.2 換成新版本的磁區。</p>
+    <div class="step"><span class="n">3</span><h4>回到 Boot Locations，Install Configuration 選 No，按 Activate</h4></div>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/up_16_activate_no.png" width="899" height="755" alt="Install Configuration 選 No 並按 Activate" loading="lazy"></button><figcaption>設定已經用 cpcfg 複製，所以這裡選 No</figcaption></figure>
+    <p>BIG-IP 會重新開機，約 15–30 分鐘。</p>
+
+    <h3>2-5　確認升級完成</h3>
+    <p>重新開機時，GUI 會顯示等待畫面。不要關閉電源。</p>
+    <figure class="narrow"><button type="button" aria-label="放大圖片"><img src="shots/up_17_reboot_wait.png" width="1193" height="759" alt="重新開機的等待畫面" loading="lazy"></button><figcaption>重新開機中</figcaption></figure>
+    <div class="step"><span class="n">1</span><h4>到 Image List，確認新版本磁區的 Active 與 Default Boot 都是 Yes</h4></div>
+    <figure><button type="button" aria-label="放大圖片"><img src="shots/up_18_upgrade_complete.png" width="1453" height="396" alt="新版本磁區的 Active 與 Default Boot 為 Yes" loading="lazy"></button><figcaption>新版本的磁區已是 Active 與 Default Boot</figcaption></figure>
+    <div class="step"><span class="n">2</span><h4>以 SSH 確認版本</h4></div>
+    <div class="code"><pre>tmsh show sys version</pre></div>
+    <p>Version 應顯示升級後的版本，例如 17.5.1.11。</p>
+  </section>
+
+  <section id="after">
+    <h2>升級後</h2>
+    <ul>
+      <li>升級前建立的 <code>/etc/php.ini.d/K000163821.ini</code> 不會保留。修正版已修正 php2shell，不需要重新建立。</li>
+      <li>建議建立 <code>/etc/php.ini.d/K000163878.ini</code>，緩解另一個 PHP 漏洞 CVE-2026-115560。步驟見 <a href="bigip.html#upgrade">BIG-IP 升級與緩解</a>。</li>
+    </ul>
+  </section>
+
+  <div class="next"><span>修正版本、升級前的準備與暫時的緩解，請看 BIG-IP 升級與緩解。</span><a class="btn ghost" href="bigip.html">BIG-IP 升級與緩解</a></div>
+
+  <footer>2026-10-27 · 畫面取自較早版本的升級過程，版本號碼與實際畫面會不同。本頁步驟沒有在 17.1.3.7、17.5.1.11、21.1.0.4 上實際操作。· <a href="index.html">回到公告</a></footer>
+</main>
+
+<div class="lightbox" id="lightbox" hidden><img alt=""></div>
+<script src="app.js"></script>
+</body>
+</html>

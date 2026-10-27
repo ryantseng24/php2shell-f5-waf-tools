@@ -151,6 +151,8 @@ footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line);
 @media (max-width: 640px) {
   body { font-size: 15px; }
   .wrap { padding-inline: 16px; }
+  .tabs { gap: 2px; }
+  .tabs a { padding: 6px 7px; font-size: 13px; }
   .sigs, .links { grid-template-columns: minmax(0, 1fr); }
   .todo li { grid-template-columns: 32px minmax(0, 1fr); gap: 12px; padding: 14px; }
   .todo li::before { width: 32px; height: 32px; font-size: 15px; }

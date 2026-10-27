@@ -2,11 +2,11 @@
 
 PHP 漏洞 php2shell（CVE-2026-109618／CVE-2026-109619）的 F5 BIG-IP Advanced WAF 設定檢查與防禦驗證工具。
 
-**說明網頁：<https://ryantseng24.github.io/php2shell-f5-waf-tools/>**（公告、設定步驟、驗證方法、BIG-IP 升級與緩解）
+**說明網頁：<https://ryantseng24.github.io/php2shell-f5-waf-tools/>**（公告、設定步驟、驗證方法、BIG-IP 升級與緩解、升級步驟）
 
 > **重要**：完整的修補方式是把 PHP 升級到 8.5.12、8.4.27、8.3.36 或 8.2.35。WAF 防護只能在升級完成前降低風險。
 >
-> **BIG-IP 設備本身**也受影響。F5 修正版：17.1.3.7、17.5.1.11、21.1.0.4（[K000163848](https://my.f5.com/manage/s/article/K000163848)）。說明見[說明網頁](https://ryantseng24.github.io/php2shell-f5-waf-tools/bigip.html)。
+> **BIG-IP 設備本身**也受影響。F5 修正版：17.1.3.7、17.5.1.11、21.1.0.4（[K000163848](https://my.f5.com/manage/s/article/K000163848)）。說明見[BIG-IP 升級與緩解](https://ryantseng24.github.io/php2shell-f5-waf-tools/bigip.html)與[升級步驟](https://ryantseng24.github.io/php2shell-f5-waf-tools/upgrade.html)。
 
 ## 下載
 
