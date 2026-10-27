@@ -132,8 +132,22 @@ cpcfg --source=HD1.1 HD1.2</pre></div>
     <h2>升級後</h2>
     <ul>
       <li>升級前建立的 <code>/etc/php.ini.d/K000163821.ini</code> 不會保留。修正版已修正 php2shell，不需要重新建立。</li>
-      <li>建議建立 <code>/etc/php.ini.d/K000163878.ini</code>。另一個 PHP 漏洞 CVE-2026-115560 是否影響 BIG-IP，F5 還在評估，建議先套用緩解。步驟見 <a href="bigip.html#upgrade">BIG-IP 升級與緩解</a>。</li>
+      <li>建議建立 <code>/etc/php.ini.d/K000163878.ini</code>。另一個 PHP 漏洞 CVE-2026-115560 是否影響 BIG-IP，F5 還在評估，建議先套用緩解。</li>
     </ul>
+    <div class="step"><span class="n">1</span><h4>以 SSH 用 root 登入，建立檔案並重新啟動 Apache</h4></div>
+    <div class="code"><pre>cat &gt; /etc/php.ini.d/K000163878.ini &lt;&lt;'EOF'
+; The configuration mitigations recommended by PHP for CVE-2026-115560
+; These will NOT survive an upgrade of BIG-IP TMOS.
+session.upload_progress.enabled = 0
+EOF
+bigstart restart httpd
+# APM systems only:
+bigstart restart httpd_sam</pre></div>
+    <p>檔案內容取自 F5 K000163878。重新啟動 httpd 時，GUI 會短暫無法使用。重新啟動 <code>httpd_sam</code> 可能中斷 APM webtop 連線。</p>
+    <div class="step"><span class="n">2</span><h4>確認設定已生效</h4></div>
+    <div class="code"><pre>php -i | grep session.upload_progress.enabled</pre></div>
+    <p>設定前顯示 <code>On</code>，設定後應顯示 <code>Off</code>。</p>
+    <div class="note warn"><b>每台都要做</b>HA 的每台設備都要做。多 blade 的系統，每個 blade 都要做（使用 <code>clsh bigstart restart httpd</code>）。下次升級 TMOS 後，這個檔案也不會保留。</div>
   </section>
 
   <div class="next"><span>修正版本、升級前的準備與暫時的緩解，請看 BIG-IP 升級與緩解。</span><a class="btn ghost" href="bigip.html">BIG-IP 升級與緩解</a></div>
