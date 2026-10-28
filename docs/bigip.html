@@ -25,9 +25,9 @@
 
 <main class="wrap">
   <header class="hero">
-    <p class="eyebrow">給 BIG-IP 管理者 · 依據 F5 K000163821、K000163848 · 2026-10-27 11:00（UTC+8）更新</p>
+    <p class="eyebrow">給 BIG-IP 管理者 · 依據 F5 K000163821、K000163848 · 2026-10-28 10:38（UTC+8）更新</p>
     <h1>BIG-IP 設備本身：升級與緩解</h1>
-    <p class="lede">BIG-IP 的管理介面與 APM 的 Access profile 也使用 PHP，同樣受 php2shell 影響。F5 已發布修正版，請儘速升級。不能立即升級時，先完成下面的緩解。這和保護後端網站的 WAF 設定是兩件不同的事。</p>
+    <p class="lede">BIG-IP 的管理介面與 APM 的 Access profile 也使用 PHP，同樣受 php2shell 影響。F5 已發布修正版，所有受影響的設備都要升級。升級的急迫程度，依設備是否使用 APM 而不同。這和保護後端網站的 WAF 設定是兩件不同的事。</p>
   </header>
 
   <section id="affected">
@@ -38,7 +38,38 @@
       <tr><td>BIG-IP（所有模組，含 APM、SSLO）</td><td>Configuration utility（管理介面）</td><td class="nw">需要已登入</td><td class="nw">High 7.5</td><td class="mono">21.1.0<br>17.5.0 – 17.5.1<br>17.1.0 – 17.1.3</td><td class="mono">21.1.0.4<br>17.5.1.11<br>17.1.3.7</td></tr>
     </table></div>
     <p class="muted">嚴重度為 CVSS v3.1。不受影響：BIG-IQ、F5 Insight、F5OS、NGINX 全系列、F5 Distributed Cloud、BIG-IP Next。F5 只評估還沒有到 EoTS（End of Technical Support）的版本，15.1 及更舊的版本不在評估範圍，也不會有修正版。</p>
-    <div class="note bad"><b>有啟用 APM 的設備請優先處理</b>Access profile 的攻擊不需要登入。對外提供 APM 服務的設備，請優先升級。</div>
+  </section>
+
+  <section id="priority">
+    <h2>升級的優先順序</h2>
+    <p>請依設備的情況，決定升級的時程。</p>
+    <div class="tbl"><table>
+      <tr><th>設備情況</th><th>原因</th><th>建議</th></tr>
+      <tr><td><b>第 1 類</b><br>有啟用 APM 或 SSLO</td><td>Access profile 的攻擊不需要登入。能連到 APM 服務的人，都可能發動攻擊。</td><td><b>儘速升級。</b>升級前先套用緩解 1。</td></tr>
+      <tr><td><b>第 2 類</b><br>沒有啟用 APM 與 SSLO，管理介面已限制存取</td><td>管理介面的攻擊需要已登入的帳號。攻擊者要能連到管理介面，也要有帳號。</td><td>安排在維護時段升級。升級前建議套用緩解 1。</td></tr>
+      <tr><td><b>第 3 類</b><br>沒有啟用 APM 與 SSLO，管理介面沒有限制存取</td><td>能連到管理介面、又有帳號或取得密碼的人，都可能發動攻擊。</td><td><b>立即完成緩解 2，</b>再儘速升級。</td></tr>
+    </table></div>
+
+    <h3>「管理介面已限制存取」要同時符合 3 個條件</h3>
+    <ol>
+      <li>管理埠只允許管理網段連線（httpd allow 清單或前端防火牆）。見<a href="#access">緩解 2-1</a>。</li>
+      <li>所有 Self IP 的 Port Lockdown 都不允許 TCP 443。Allow Default 包含 TCP 443。見<a href="#access">緩解 2-2</a>。</li>
+      <li>只有完全可信任的管理者有登入帳號。見<a href="#access">緩解 2-3</a>。</li>
+    </ol>
+    <p>用下列唯讀指令確認：</p>
+    <div class="code"><pre># provisioned if the output shows "level ..."
+tmsh list sys provision apm
+tmsh list sys provision sslo
+# management port allow list
+tmsh list sys httpd allow
+# check allow-service of each self IP
+tmsh list net self</pre></div>
+    <p>Self IP 的 <code>allow-service</code> 如果是 <code>default</code>、<code>all</code>，或清單中有 <code>tcp:443</code>，表示這個 Self IP 可以連到管理介面。</p>
+    <ul>
+      <li>F5 在 2026-10-22 版的 K000163821 把 SSLO 與 APM 列在同一列，最新版只列 APM。本頁把 SSLO 歸到第 1 類。</li>
+      <li>有啟用 APM，但沒有 virtual server 套用 Access profile 時，F5 沒有說明是否受影響。本頁歸到第 1 類。</li>
+    </ul>
+    <div class="note warn"><b>第 2 類不代表沒有風險</b>F5 對管理介面的評分仍是 High 7.5。請排定升級日期，不要無限期延後。</div>
   </section>
 
   <section id="upgrade">
@@ -67,9 +98,11 @@
     <h3>升級後</h3>
     <ol>
       <li>用 <code>tmsh show sys version</code> 確認版本。</li>
+      <li>用 <code>rpm -q php --changelog | grep CVE-2026-109618</code> 確認 PHP 已包含修正。應顯示 <code>Fixed CVE-2026-109618 &amp; CVE-2026-109619</code>。</li>
       <li>建議建立 <code>/etc/php.ini.d/K000163878.ini</code>，再重新啟動 Apache（見下方）。</li>
       <li>繼續保留緩解 2 的管理介面存取限制。</li>
     </ol>
+    <div class="note info"><b>掃描工具可能回報 PHP 5.4.45</b>修正版的 PHP 版本仍顯示 5.4.45。F5 把修正 backport 到這個版本，版本號碼沒有改變。掃描工具可能依版本號碼回報漏洞，請以上面的 <code>rpm</code> 指令與 K000163821 為準。</div>
     <div class="note warn"><b>升級後建議保留一項 PHP 設定</b>修正版已修正 CVE-2026-109618／109619，緩解 1 的 4 項設定不需要重做。升級後，<code>/etc/php.ini.d/</code> 下的檔案不會保留。F5 還在評估另一個 PHP 漏洞 CVE-2026-115560（K000163878）是否影響 BIG-IP，並建議把 <code>session.upload_progress.enabled</code> 設為 0。</div>
     <div class="code"><pre>cat &gt; /etc/php.ini.d/K000163878.ini &lt;&lt;'EOF'
 ; The configuration mitigations recommended by PHP for CVE-2026-115560
@@ -174,7 +207,7 @@ tmsh save /sys config</pre></div>
 
   <div class="next"><span>保護後端 PHP 網站的 WAF 設定，請看設定步驟。</span><a class="btn ghost" href="setup.html">設定步驟</a></div>
 
-  <footer>2026-10-27 11:00（UTC+8）更新 · 內容依據 F5 K000163821、K000163848、K000163878、K9476、K13845、K13309、K17333。原本的設定值為在 BIG-IP 17.5.1.8 上唯讀查得；本頁的升級與緩解設定未在測試設備上實際執行。· <a href="index.html">回到公告</a></footer>
+  <footer>2026-10-28 10:38（UTC+8）更新 · 內容依據 F5 K000163821、K000163848、K000163878、K9476、K13845、K13309、K17333。原本的設定值為在 BIG-IP 17.5.1.8 上唯讀查得；本頁的升級與緩解設定未在測試設備上實際執行。· <a href="index.html">回到公告</a></footer>
 </main>
 <script src="app.js"></script>
 </body>
